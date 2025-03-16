@@ -56,9 +56,10 @@
     <script>
       const CLIENT_ID =
         "142637178619-is7ae2e9g5mos8sjlqr5cljuma7vk9rk.apps.googleusercontent.com";
+      const REDIRECT_URI = "https://cdsai-oauth.vercel.app/oauth/callback";
+      const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
       const SCOPES =
         "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets";
-      let tokenClient;
 
       function updateStatus(message) {
         document.querySelector(".status").textContent = message;
@@ -68,94 +69,67 @@
         document.querySelector(".button").disabled = !enabled;
       }
 
-      window.onload = async function () {
-        try {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            redirect_uri: "https://www.figma.com/oauth/callback",
-            callback: handleAuthResponse,
-            error_callback: (error) => {
-              console.error("Google API initialization error:", error);
-              updateStatus("인증 초기화 오류: " + error.message);
-              updateButton(true);
+      function handleAuthClick() {
+        updateStatus("Google 계정 연동 중...");
+        updateButton(false);
+
+        const width = 600;
+        const height = 600;
+        const left = (window.innerWidth - width) / 2;
+        const top = (window.innerHeight - height) / 2;
+
+        const authUrl = new URL(AUTH_URL);
+        authUrl.searchParams.append("client_id", CLIENT_ID);
+        authUrl.searchParams.append("redirect_uri", REDIRECT_URI);
+        authUrl.searchParams.append("response_type", "code");
+        authUrl.searchParams.append("scope", SCOPES);
+        authUrl.searchParams.append("access_type", "offline");
+        authUrl.searchParams.append("prompt", "consent");
+
+        const authWindow = window.open(
+          authUrl.toString(),
+          "Google 계정 연동",
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        window.addEventListener("message", function (event) {
+          if (event.origin !== "https://cdsai-oauth.vercel.app") return;
+
+          try {
+            const data = event.data;
+            if (data.type === "oauth-success") {
+              updateStatus("Google 계정 연동 완료");
               parent.postMessage(
                 {
                   pluginMessage: {
-                    type: "google-api-error",
-                    error: error.message,
+                    type: "google-api-ready",
+                    access_token: data.access_token,
                   },
                 },
                 "*"
               );
-            },
-          });
-        } catch (error) {
-          console.error("Google API initialization error:", error);
-          updateStatus("초기화 오류: " + error.message);
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "google-api-error",
-                error: error.message,
+            } else if (data.type === "oauth-error") {
+              throw new Error(data.error);
+            }
+          } catch (error) {
+            console.error("Auth error:", error);
+            updateStatus("인증 오류: " + error.message);
+            updateButton(true);
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "google-api-error",
+                  error: error.message,
+                },
               },
-            },
-            "*"
-          );
-        }
-      };
-
-      function handleAuthClick() {
-        updateStatus("Google 계정 연동 중...");
-        updateButton(false);
-        try {
-          tokenClient.requestAccessToken({
-            prompt: "consent",
-            access_type: "offline",
-          });
-        } catch (error) {
-          console.error("Auth request error:", error);
-          updateStatus("인증 요청 오류: " + error.message);
-          updateButton(true);
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "google-api-error",
-                error: error.message,
-              },
-            },
-            "*"
-          );
-        }
-      }
-
-      function handleAuthResponse(response) {
-        if (response.error) {
-          console.error("Auth response error:", response.error);
-          updateStatus("인증 오류: " + response.error);
-          updateButton(true);
-          parent.postMessage(
-            {
-              pluginMessage: {
-                type: "google-api-error",
-                error: response.error,
-              },
-            },
-            "*"
-          );
-          return;
-        }
-
-        updateStatus("Google 계정 연동 완료");
-        parent.postMessage(
-          {
-            pluginMessage: {
-              type: "google-api-ready",
-              access_token: response.access_token,
-            },
-          },
-          "*"
-        );
+              "*"
+            );
+          } finally {
+            if (authWindow) {
+              authWindow.close();
+            }
+          }
+        });
       }
     </script>
   </body>
