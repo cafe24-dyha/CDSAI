@@ -14,10 +14,23 @@
       rel="stylesheet"
     />
     <script>
-      // 환경 변수에서 API 키 로드
-      const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-      const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+      // API 키는 서버에서 로드
+      let OPENAI_API_KEY = "";
+      let GOOGLE_CLIENT_ID = "";
       const DRIVE_FOLDER_ID = "0AP1E8jgbsh1ZUk9PVA";
+
+      // 환경변수 로드
+      async function loadEnvVars() {
+        try {
+          const response = await fetch("/api/config");
+          const config = await response.json();
+          OPENAI_API_KEY = config.OPENAI_API_KEY;
+          GOOGLE_CLIENT_ID = config.GOOGLE_CLIENT_ID;
+          loadGoogleAPI();
+        } catch (error) {
+          console.error("Error loading config:", error);
+        }
+      }
 
       // Google API 초기화
       function loadGoogleAPI() {
@@ -46,8 +59,8 @@
         });
       }
 
-      // 페이지 로드 시 Google API 초기화
-      window.onload = loadGoogleAPI;
+      // 페이지 로드 시 환경변수 로드
+      window.onload = loadEnvVars;
 
       // ... 나머지 코드는 그대로 유지 ...
     </script>
