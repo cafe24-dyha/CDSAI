@@ -131,37 +131,20 @@ if (figma.editorType === "slides") {
 // and get a response from OpenAI Assistant
 
 // Show the plugin UI (400x600 크기로 UI 표시)
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { width: 800, height: 600 });
 
 interface PluginMessage {
   type: string;
-  status?: string;
-  message?: string;
+  error?: string;
 }
 
 // UI와의 메시지 통신
 figma.ui.onmessage = async (msg: PluginMessage) => {
-  try {
-    console.log("받은 메시지:", msg);
-    switch (msg.type) {
-      case "error":
-        figma.notify("오류: " + msg.message);
-        break;
-      case "initComplete":
-        figma.notify("초기화 완료");
-        break;
-      case "ready":
-        console.log("UI 준비됨");
-        figma.ui.postMessage({ type: "init" });
-        break;
-      default:
-        console.log("알 수 없는 메시지:", msg);
-    }
-  } catch (error) {
-    console.error("메시지 처리 오류:", error);
-    figma.notify(
-      "오류가 발생했습니다: " +
-        (error instanceof Error ? error.message : String(error))
-    );
+  if (msg.type === "google-api-ready") {
+    console.log("Google API is ready");
+    figma.notify("Google API 초기화 완료");
+  } else if (msg.type === "google-api-error") {
+    console.error("Google API initialization error:", msg.error);
+    figma.notify(`Google API 초기화 오류: ${msg.error}`, { error: true });
   }
 };

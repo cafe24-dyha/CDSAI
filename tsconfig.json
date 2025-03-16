@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "lib": ["es6", "dom"],
+    "lib": ["es6"],
+    "typeRoots": ["./node_modules/@figma"],
     "moduleResolution": "node",
-    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "noImplicitAny": false
+    "skipLibCheck": true
   },
-  "include": ["code.ts", "ui.html"],
+  "include": ["code.ts"],
   "exclude": ["node_modules"]
 }

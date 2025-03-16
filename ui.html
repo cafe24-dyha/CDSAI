@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CDS AI Assistant</title>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #fff;
+      }
+      #plugin-ui {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        background: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="plugin-ui">
+      <div class="status">플러그인 초기화 중...</div>
+    </div>
+    <script>
+      const GOOGLE_CLIENT_ID =
+        "142637178619-is7ae2e9g5mos8sjlqr5cljuma7vk9rk.apps.googleusercontent.com";
+      const DRIVE_FOLDER_ID = "0AP1E8jgbsh1ZUk9PVA";
+
+      function updateStatus(message) {
+        document.querySelector(".status").textContent = message;
+      }
+
+      async function initializeGoogleAPI() {
+        try {
+          const client = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope:
+              "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets",
+            callback: (response) => {
+              if (response.error) {
+                throw new Error(response.error);
+              }
+              updateStatus("Google API 초기화 완료");
+              parent.postMessage(
+                { pluginMessage: { type: "google-api-ready" } },
+                "*"
+              );
+            },
+          });
+
+          client.requestAccessToken();
+        } catch (error) {
+          updateStatus("Google API 초기화 오류: " + error.message);
+          parent.postMessage(
+            {
+              pluginMessage: { type: "google-api-error", error: error.message },
+            },
+            "*"
+          );
+        }
+      }
+
+      // 페이지 로드 시 초기화
+      window.onload = initializeGoogleAPI;
+    </script>
+  </body>
+</html>
