@@ -3,6 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CDS AI Assistant</title>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <style>
       body {
         font-family: sans-serif;
@@ -47,10 +48,9 @@
     <script>
       const GOOGLE_CLIENT_ID =
         "142637178619-is7ae2e9g5mos8sjlqr5cljuma7vk9rk.apps.googleusercontent.com";
-      const DEVICE_CODE_ENDPOINT = "https://oauth2.googleapis.com/device/code";
-      const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
       const SCOPES =
         "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets";
+      let tokenClient;
 
       function updateStatus(message) {
         document.querySelector(".status").textContent = message;
@@ -60,86 +60,50 @@
         document.querySelector(".button").disabled = !enabled;
       }
 
-      async function getDeviceCode() {
-        const response = await fetch(DEVICE_CODE_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
+      window.onload = async function () {
+        try {
+          tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: SCOPES,
-          }),
-        });
-        return response.json();
-      }
-
-      async function pollForToken(deviceCode, interval, expiresIn) {
-        const startTime = Date.now();
-        const pollInterval = interval * 1000; // Convert to milliseconds
-
-        while (Date.now() - startTime < expiresIn * 1000) {
-          try {
-            const response = await fetch(TOKEN_ENDPOINT, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              body: new URLSearchParams({
-                client_id: GOOGLE_CLIENT_ID,
-                device_code: deviceCode,
-                grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-              }),
-            });
-
-            const data = await response.json();
-
-            if (data.access_token) {
-              return data;
-            }
-
-            if (data.error === "authorization_pending") {
-              await new Promise((resolve) => setTimeout(resolve, pollInterval));
-              continue;
-            }
-
-            throw new Error(data.error_description || data.error);
-          } catch (error) {
-            throw error;
-          }
-        }
-
-        throw new Error("Device code expired");
-      }
-
-      async function handleAuthClick() {
-        updateStatus("Google 계정 연동 중...");
-        updateButton(false);
-
-        try {
-          const deviceCodeResponse = await getDeviceCode();
-          updateStatus(
-            `다음 URL에서 코드를 입력하세요: ${deviceCodeResponse.verification_url}\n코드: ${deviceCodeResponse.user_code}`
-          );
-
-          const tokenResponse = await pollForToken(
-            deviceCodeResponse.device_code,
-            deviceCodeResponse.interval || 5,
-            deviceCodeResponse.expires_in
-          );
-
-          updateStatus("Google 계정 연동 완료");
+            callback: handleAuthResponse,
+            error_callback: (error) => {
+              console.error("Google API initialization error:", error);
+              updateStatus("인증 초기화 오류: " + error.message);
+              updateButton(true);
+              parent.postMessage(
+                {
+                  pluginMessage: {
+                    type: "google-api-error",
+                    error: error.message,
+                  },
+                },
+                "*"
+              );
+            },
+          });
+        } catch (error) {
+          console.error("Google API initialization error:", error);
+          updateStatus("초기화 오류: " + error.message);
           parent.postMessage(
             {
               pluginMessage: {
-                type: "google-api-ready",
-                access_token: tokenResponse.access_token,
+                type: "google-api-error",
+                error: error.message,
               },
             },
             "*"
           );
+        }
+      };
+
+      function handleAuthClick() {
+        updateStatus("Google 계정 연동 중...");
+        updateButton(false);
+        try {
+          tokenClient.requestAccessToken({ prompt: "consent" });
         } catch (error) {
-          updateStatus("인증 오류: " + error.message);
+          console.error("Auth request error:", error);
+          updateStatus("인증 요청 오류: " + error.message);
           updateButton(true);
           parent.postMessage(
             {
@@ -151,6 +115,35 @@
             "*"
           );
         }
+      }
+
+      function handleAuthResponse(response) {
+        if (response.error) {
+          console.error("Auth response error:", response.error);
+          updateStatus("인증 오류: " + response.error);
+          updateButton(true);
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "google-api-error",
+                error: response.error,
+              },
+            },
+            "*"
+          );
+          return;
+        }
+
+        updateStatus("Google 계정 연동 완료");
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "google-api-ready",
+              access_token: response.access_token,
+            },
+          },
+          "*"
+        );
       }
     </script>
   </body>
