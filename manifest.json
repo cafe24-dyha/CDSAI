@@ -1,8 +1,17 @@
 {
   "name": "CDS AI Assistant",
-  "id": "1234567890123456789",
+  "id": "1482979851026117231",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://accounts.google.com",
+      "https://www.googleapis.com",
+      "https://sheets.googleapis.com",
+      "https://oauth2.googleapis.com"
+    ]
+  },
+  "documentAccess": "dynamic-page"
 }
