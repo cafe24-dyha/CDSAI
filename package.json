@@ -1,0 +1,19 @@
+{
+  "name": "figma-vision-assistant",
+  "version": "1.0.0",
+  "description": "Figma Vision Assistant with Google Workspace integration",
+  "main": "code.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@types/gapi": "^0.0.47",
+    "@types/gapi.auth2": "^0.0.60",
+    "@types/gapi.client": "^1.0.8"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "typescript": "^5.0.0"
+  }
+}

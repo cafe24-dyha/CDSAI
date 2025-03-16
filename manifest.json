@@ -1,0 +1,20 @@
+{
+  "name": "Figma Vision Assistant",
+  "id": "1234567890123456789",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://apis.google.com",
+      "https://accounts.google.com",
+      "https://www.googleapis.com",
+      "https://oauth2.googleapis.com",
+      "https://api.openai.com"
+    ],
+    "devAllowedDomains": ["*"]
+  },
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"]
+}
