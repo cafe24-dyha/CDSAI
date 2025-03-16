@@ -7,10 +7,13 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": [
+      "https://apis.google.com",
       "https://accounts.google.com",
       "https://www.googleapis.com",
       "https://sheets.googleapis.com",
-      "https://oauth2.googleapis.com"
+      "https://oauth2.googleapis.com",
+      "https://www.figma.com",
+      "https://figma.com"
     ]
   },
   "documentAccess": "dynamic-page"

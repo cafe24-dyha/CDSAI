@@ -4,14 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CDS AI Assistant</title>
     <script src="https://accounts.google.com/gsi/client"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css"
-      rel="stylesheet"
-    />
     <style>
       body {
         font-family: sans-serif;
@@ -29,53 +21,127 @@
         border-radius: 4px;
         background: #f0f0f0;
       }
+      .button {
+        padding: 8px 16px;
+        background: #18a0fb;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .button:hover {
+        background: #0d8de3;
+      }
+      .button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
     <div id="plugin-ui">
-      <div class="status">플러그인 초기화 중...</div>
+      <div class="status">Google API 로드 중...</div>
+      <button class="button" onclick="handleAuthClick()" disabled>
+        Google 계정 연동
+      </button>
     </div>
     <script>
       const GOOGLE_CLIENT_ID =
         "142637178619-is7ae2e9g5mos8sjlqr5cljuma7vk9rk.apps.googleusercontent.com";
       const DRIVE_FOLDER_ID = "0AP1E8jgbsh1ZUk9PVA";
+      let tokenClient;
 
       function updateStatus(message) {
         document.querySelector(".status").textContent = message;
       }
 
-      async function initializeGoogleAPI() {
+      function updateButton(enabled) {
+        document.querySelector(".button").disabled = !enabled;
+      }
+
+      window.onload = async function () {
         try {
-          const client = google.accounts.oauth2.initTokenClient({
+          tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope:
               "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets",
-            callback: (response) => {
-              if (response.error) {
-                throw new Error(response.error);
-              }
-              updateStatus("Google API 초기화 완료");
+            callback: handleAuthResponse,
+            error_callback: (error) => {
+              updateStatus("인증 초기화 오류: " + error.message);
               parent.postMessage(
-                { pluginMessage: { type: "google-api-ready" } },
+                {
+                  pluginMessage: {
+                    type: "google-api-error",
+                    error: error.message,
+                  },
+                },
                 "*"
               );
             },
           });
-
-          client.requestAccessToken();
+          updateStatus("Google 계정 연동이 필요합니다");
+          updateButton(true);
         } catch (error) {
-          updateStatus("Google API 초기화 오류: " + error.message);
+          updateStatus("초기화 오류: " + error.message);
           parent.postMessage(
             {
-              pluginMessage: { type: "google-api-error", error: error.message },
+              pluginMessage: {
+                type: "google-api-error",
+                error: error.message,
+              },
+            },
+            "*"
+          );
+        }
+      };
+
+      function handleAuthClick() {
+        updateStatus("Google 계정 연동 중...");
+        updateButton(false);
+        try {
+          tokenClient.requestAccessToken();
+        } catch (error) {
+          updateStatus("인증 요청 오류: " + error.message);
+          updateButton(true);
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "google-api-error",
+                error: error.message,
+              },
             },
             "*"
           );
         }
       }
 
-      // 페이지 로드 시 초기화
-      window.onload = initializeGoogleAPI;
+      function handleAuthResponse(response) {
+        if (response.error) {
+          updateStatus("인증 오류: " + response.error);
+          updateButton(true);
+          parent.postMessage(
+            {
+              pluginMessage: {
+                type: "google-api-error",
+                error: response.error,
+              },
+            },
+            "*"
+          );
+          return;
+        }
+
+        updateStatus("Google 계정 연동 완료");
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "google-api-ready",
+              access_token: response.access_token,
+            },
+          },
+          "*"
+        );
+      }
     </script>
   </body>
 </html>
