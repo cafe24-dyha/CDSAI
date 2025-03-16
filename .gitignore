@@ -6,3 +6,10 @@ node_modules
 out/
 dist/
 code.js
+
+.env
+.env.local
+.env.*.local
+node_modules/
+dist/
+.DS_Store
